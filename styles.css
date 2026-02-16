@@ -66,6 +66,18 @@ a {
   font-size: 14px;
 }
 
+.toggle-group {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.button.is-active {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.6);
+  color: #1e1b4b;
+}
+
 select,
 input[type="search"] {
   padding: 11px 12px;
@@ -87,8 +99,15 @@ input[type="search"] {
 .card-grid {
   display: grid;
   gap: 18px;
-  grid-template-columns: 1fr;
   margin-bottom: 40px;
+}
+
+.card-grid.list-view {
+  grid-template-columns: 1fr;
+}
+
+.card-grid.grid-view {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
 .card {
@@ -101,6 +120,21 @@ input[type="search"] {
   border: 1px solid rgba(148, 163, 184, 0.25);
   backdrop-filter: blur(10px);
   position: relative;
+}
+
+.card-grid.grid-view .card {
+  flex-direction: column;
+}
+
+.card-grid.grid-view .card-cover {
+  width: 100%;
+  height: 220px;
+}
+
+.card-grid.grid-view .drag-handle {
+  width: 100%;
+  height: 16px;
+  border-radius: 999px;
 }
 
 .drag-handle {
@@ -280,6 +314,7 @@ input[type="search"] {
   color: #cbd5f5;
   font-size: 12px;
   padding: 18px 0;
+  text-align: center;
 }
 
 .empty-state {

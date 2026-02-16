@@ -1,78 +1,34 @@
-const books = [
-  {
-    order: 20,
-    title: "イシューからはじめよ",
-    author: "安宅和人",
-    rating: 4,
-    tags: ["思考法", "仕事術"],
-    affiliateUrl: "",
-    coverImage: "",
-    notes: {
-      selectionBackground: [
-        "解くべき問題の見極め方を学びたかった。",
-        "仕事の進め方を見直すタイミングだった。",
-      ],
-      impressions: [],
-    },
-  },
-  {
-    order: 21,
-    title: "勝負眼",
-    author: "藤田晋",
-    rating: 5,
-    tags: ["ビジネス", "スポーツ", "エッセイ"],
-    affiliateUrl: "",
-    coverImage: "",
-    notes: {
-      impressions: [
-        "文章の書き方がうまく、読んでいて飽きない。面白い。",
-        "藤田氏のサッカーや競馬に対する情熱がすごい。人生を楽しんでいる印象。",
-        "すごい酒飲み。読んでいると酒飲みでもパフォーマンスが出せると錯覚しそうになる。",
-        "彼は酒飲みでも業務が成立するほどのバイタリティがあるからこそで、勘違いしないよう注意が必要。",
-        "息子が10歳くらいという話が出てきて印象に残った。",
-      ],
-      selectionBackground: [],
-    },
-  },
-  {
-    order: 22,
-    title: "「話が面白い人」は何をどう読んでいるのか",
-    author: "三宅香帆",
-    rating: 4,
-    tags: ["読書術", "伝える力"],
-    affiliateUrl: "",
-    coverImage: "",
-    notes: {
-      impressions: [
-        "比較、抽象、発見、流行、不易の5つに分類することを意識して伝えると良い。",
-      ],
-      selectionBackground: [],
-    },
-  },
-  {
-    order: 23,
-    title: "なぜ、働いていると本が読めなくなるのか",
-    author: "三宅香帆",
-    rating: 5,
-    tags: ["読書論", "働き方"],
-    affiliateUrl: "",
-    coverImage: "",
-    notes: {
-      impressions: [
-        "読書とはノイズである。",
-        "現代人には受け入れられにくい感覚。",
-        "コスパ・タイパ重視で雑音を嫌う流れ（自分もそうだった）でも、それがあるべき姿とは違うと感じた。",
-        "人生を有意義にするには雑音も必要で、見たい動画だけを見る・やりたいことだけやるのは先がない気がする。",
-      ],
-      selectionBackground: [],
-    },
-  },
-];
+const STORAGE_KEY = "bookReviewPortal.books";
+
+const loadBooksFromStorage = () => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed;
+  } catch {
+    return [];
+  }
+};
+
+const saveBooksToStorage = () => {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(books));
+};
+
+let books = loadBooksFromStorage();
 
 const sortSelect = document.getElementById("sortSelect");
 const searchInput = document.getElementById("searchInput");
+const tagFilter = document.getElementById("tagFilter");
+const ratingFilter = document.getElementById("ratingFilter");
 const cardGrid = document.getElementById("cardGrid");
 const totalCount = document.getElementById("totalCount");
+const viewListButton = document.getElementById("viewListButton");
+const viewGridButton = document.getElementById("viewGridButton");
+const exportButton = document.getElementById("exportButton");
+const importButton = document.getElementById("importButton");
+const importFile = document.getElementById("importFile");
 const editDialog = document.getElementById("editDialog");
 const editForm = document.getElementById("editForm");
 const editDialogTitle = document.getElementById("editDialogTitle");
@@ -94,6 +50,7 @@ let editingOrder = null;
 let pendingCoverImage = "";
 let isCreateMode = false;
 let lastReorderOrders = new Set();
+let viewMode = "list";
 
 const createStars = (rating) => {
   const maxStars = 5;
@@ -104,6 +61,55 @@ const normalizeText = (text) => text.toLowerCase().replace(/\s+/g, "");
 
 const nextOrderNumber = () =>
   books.length ? Math.max(...books.map((book) => book.order)) + 1 : 1;
+
+const setViewMode = (mode) => {
+  viewMode = mode;
+  cardGrid.classList.toggle("list-view", mode === "list");
+  cardGrid.classList.toggle("grid-view", mode === "grid");
+  viewListButton.classList.toggle("is-active", mode === "list");
+  viewGridButton.classList.toggle("is-active", mode === "grid");
+};
+
+const updateTagOptions = () => {
+  const selected = tagFilter.value;
+  const tags = Array.from(
+    new Set(books.flatMap((book) => book.tags || []))
+  ).sort((a, b) => a.localeCompare(b, "ja", { sensitivity: "base" }));
+  tagFilter.innerHTML = `<option value="">すべて</option>${tags
+    .map((tag) => `<option value="${tag}">${tag}</option>`)
+    .join("")}`;
+  tagFilter.value = tags.includes(selected) ? selected : "";
+};
+
+const sanitizeBook = (raw, fallbackOrder) => {
+  if (!raw || typeof raw !== "object") return null;
+  const title = String(raw.title || "").trim();
+  if (!title) return null;
+  const author = String(raw.author || "").trim();
+  const rating = Number(raw.rating);
+  const tags = Array.isArray(raw.tags)
+    ? raw.tags.map((tag) => String(tag).trim()).filter(Boolean)
+    : [];
+  const affiliateUrl = String(raw.affiliateUrl || "").trim();
+  const coverImage = String(raw.coverImage || "").trim();
+  const notes = raw.notes || {};
+  const selectionBackground = Array.isArray(notes.selectionBackground)
+    ? notes.selectionBackground.map((note) => String(note)).filter(Boolean)
+    : [];
+  const impressions = Array.isArray(notes.impressions)
+    ? notes.impressions.map((note) => String(note)).filter(Boolean)
+    : [];
+  return {
+    order: Number(raw.order) || fallbackOrder,
+    title,
+    author,
+    rating: rating >= 1 && rating <= 5 ? rating : 3,
+    tags,
+    affiliateUrl,
+    coverImage,
+    notes: { selectionBackground, impressions },
+  };
+};
 
 const renderNotes = (notes) => {
   const sections = [];
@@ -228,30 +234,100 @@ const getSortedBooks = (items, sortKey) => {
   return sorted;
 };
 
-const getFilteredBooks = (items, keyword) => {
-  if (!keyword) return items;
-  const normalized = normalizeText(keyword);
-  return items.filter((book) => {
-    const haystack = [
-      book.title,
-      book.author,
-      book.tags.join(" "),
-      JSON.stringify(book.notes),
-    ]
-      .join(" ")
-      .toLowerCase();
-    return normalizeText(haystack).includes(normalized);
-  });
+const getFilteredBooks = (items, keyword, tag, rating) => {
+  let result = items;
+  if (keyword) {
+    const normalized = normalizeText(keyword);
+    result = result.filter((book) => {
+      const haystack = [
+        book.title,
+        book.author,
+        (book.tags || []).join(" "),
+        JSON.stringify(book.notes || {}),
+      ]
+        .join(" ")
+        .toLowerCase();
+      return normalizeText(haystack).includes(normalized);
+    });
+  }
+  if (tag) {
+    result = result.filter((book) => (book.tags || []).includes(tag));
+  }
+  if (rating) {
+    const ratingNumber = Number(rating);
+    result = result.filter((book) => book.rating === ratingNumber);
+  }
+  return result;
 };
 
 const refreshView = () => {
-  const filtered = getFilteredBooks(books, searchInput.value.trim());
+  updateTagOptions();
+  const filtered = getFilteredBooks(
+    books,
+    searchInput.value.trim(),
+    tagFilter.value,
+    ratingFilter.value
+  );
   const sorted = getSortedBooks(filtered, sortSelect.value);
   renderCards(sorted);
 };
 
 sortSelect.addEventListener("change", refreshView);
 searchInput.addEventListener("input", refreshView);
+tagFilter.addEventListener("change", refreshView);
+ratingFilter.addEventListener("change", refreshView);
+viewListButton.addEventListener("click", () => setViewMode("list"));
+viewGridButton.addEventListener("click", () => setViewMode("grid"));
+exportButton.addEventListener("click", () => {
+  const blob = new Blob([JSON.stringify(books, null, 2)], {
+    type: "application/json",
+  });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = "books.json";
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+});
+importButton.addEventListener("click", () => {
+  importFile.value = "";
+  importFile.click();
+});
+importFile.addEventListener("change", async (event) => {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  try {
+    const text = await file.text();
+    const parsed = JSON.parse(text);
+    if (!Array.isArray(parsed)) {
+      alert("JSONの形式が正しくありません。");
+      return;
+    }
+    const sanitized = parsed
+      .map((item, index) => sanitizeBook(item, index + 1))
+      .filter(Boolean);
+    if (!sanitized.length) {
+      alert("取り込めるデータがありませんでした。");
+      return;
+    }
+    const overwrite = confirm(
+      "インポートしたデータで上書きしますか？\nOK: 上書き / キャンセル: 既存に追加"
+    );
+    if (overwrite) {
+      books = sanitized.map((book, index) => ({ ...book, order: index + 1 }));
+    } else {
+      sanitized.forEach((book) => {
+        books.push({ ...book, order: nextOrderNumber() });
+      });
+    }
+    saveBooksToStorage();
+    refreshView();
+  } catch {
+    alert("ファイルの読み込みに失敗しました。");
+  }
+});
 
 cardGrid.addEventListener("click", (event) => {
   const target = event.target;
@@ -267,14 +343,18 @@ cardGrid.addEventListener("click", (event) => {
 let draggedOrder = null;
 
 const canDrag = () =>
-  sortSelect.value === "order-asc" && searchInput.value.trim() === "";
+  sortSelect.value === "order-asc" &&
+  searchInput.value.trim() === "" &&
+  tagFilter.value === "" &&
+  ratingFilter.value === "" &&
+  viewMode === "list";
 
 cardGrid.addEventListener("dragstart", (event) => {
   const handle = event.target.closest?.(".drag-handle");
   if (!handle) return;
   if (!canDrag()) {
     event.preventDefault();
-    alert("並び替えは「番号: 昇順」かつ検索なしで行ってください。");
+    alert("並び替えは「番号: 昇順」かつ検索/フィルタなし、リスト表示で行ってください。");
     return;
   }
   const card = handle.closest(".card");
@@ -318,6 +398,7 @@ cardGrid.addEventListener("drop", (event) => {
   const temp = dragged.order;
   dragged.order = target.order;
   target.order = temp;
+  saveBooksToStorage();
   lastReorderOrders = new Set([dragged.order, target.order]);
   draggedOrder = null;
   refreshView();
@@ -407,6 +488,7 @@ editForm.addEventListener("submit", (event) => {
       rating: 3,
       ...payload,
     });
+    saveBooksToStorage();
     editDialog.close();
     refreshView();
     return;
@@ -416,6 +498,7 @@ editForm.addEventListener("submit", (event) => {
   const book = books.find((item) => item.order === editingOrder);
   if (!book) return;
   Object.assign(book, payload);
+  saveBooksToStorage();
   editDialog.close();
   refreshView();
 });
@@ -433,6 +516,7 @@ deleteBook.addEventListener("click", () => {
   const index = books.findIndex((item) => item.order === editingOrder);
   if (index === -1) return;
   books.splice(index, 1);
+  saveBooksToStorage();
   editDialog.close();
   refreshView();
 });
@@ -485,4 +569,5 @@ const resizeImage = (file, maxWidth, maxHeight, quality) =>
     reader.readAsDataURL(file);
   });
 
+setViewMode("list");
 refreshView();

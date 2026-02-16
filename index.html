@@ -38,10 +38,50 @@
           />
         </div>
         <div class="control-group">
+          <label for="tagFilter">タグ</label>
+          <select id="tagFilter">
+            <option value="">すべて</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label for="ratingFilter">評価</label>
+          <select id="ratingFilter">
+            <option value="">すべて</option>
+            <option value="5">★5</option>
+            <option value="4">★4</option>
+            <option value="3">★3</option>
+            <option value="2">★2</option>
+            <option value="1">★1</option>
+          </select>
+        </div>
+        <div class="control-group">
           <label>新規追加</label>
           <button class="button primary" type="button" id="addBookButton">
             新しい本を追加
           </button>
+        </div>
+        <div class="control-group">
+          <label>表示</label>
+          <div class="toggle-group">
+            <button class="button" type="button" id="viewListButton">
+              リスト
+            </button>
+            <button class="button" type="button" id="viewGridButton">
+              グリッド
+            </button>
+          </div>
+        </div>
+        <div class="control-group">
+          <label>バックアップ</label>
+          <div class="toggle-group">
+            <button class="button" type="button" id="exportButton">
+              エクスポート
+            </button>
+            <button class="button" type="button" id="importButton">
+              インポート
+            </button>
+          </div>
+          <input type="file" id="importFile" accept="application/json" hidden />
         </div>
       </section>
 
@@ -49,7 +89,7 @@
         <span>全件数: <strong id="totalCount">0</strong></span>
       </section>
 
-      <section id="cardGrid" class="card-grid" aria-live="polite"></section>
+      <section id="cardGrid" class="card-grid list-view" aria-live="polite"></section>
     </main>
 
     <dialog id="editDialog" class="edit-dialog">
@@ -118,7 +158,7 @@
 
     <footer class="site-footer">
       <div class="container">
-        <p>Amazonアソシエイトリンクは各カードの「Amazonで見る」から設定できます。</p>
+        <p>© 2026 書評ポータル</p>
       </div>
     </footer>
 
