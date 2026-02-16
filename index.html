@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>書評ポータル</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container">
+        <h1>書評ポータル</h1>
+        <p class="subtitle">読書メモを一覧で見やすく整理するテンプレート</p>
+      </div>
+    </header>
+
+    <main class="container">
+      <section class="controls">
+        <div class="control-group">
+          <label for="sortSelect">並び替え</label>
+          <select id="sortSelect">
+            <option value="order-asc">番号: 昇順</option>
+            <option value="order-desc">番号: 降順</option>
+            <option value="rating-desc">お気に入り度: 高い順</option>
+            <option value="rating-asc">お気に入り度: 低い順</option>
+            <option value="title-asc">タイトル: 昇順</option>
+            <option value="title-desc">タイトル: 降順</option>
+            <option value="author-asc">著者: 昇順</option>
+            <option value="author-desc">著者: 降順</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label for="searchInput">検索</label>
+          <input
+            id="searchInput"
+            type="search"
+            placeholder="タイトル / 著者 / メモを検索"
+          />
+        </div>
+        <div class="control-group">
+          <label>新規追加</label>
+          <button class="button primary" type="button" id="addBookButton">
+            新しい本を追加
+          </button>
+        </div>
+      </section>
+
+      <section class="list-header">
+        <span>全件数: <strong id="totalCount">0</strong></span>
+      </section>
+
+      <section id="cardGrid" class="card-grid" aria-live="polite"></section>
+    </main>
+
+    <dialog id="editDialog" class="edit-dialog">
+      <form method="dialog" class="edit-form" id="editForm">
+        <div class="edit-header">
+          <h2 id="editDialogTitle">書評を編集</h2>
+          <button type="button" class="button" id="closeDialog">閉じる</button>
+        </div>
+        <div class="edit-body">
+          <label>
+            <span class="label-title">
+              タイトル <span class="required-label">必須</span>
+            </span>
+            <input type="text" id="editTitle" required />
+          </label>
+          <label>
+            著者
+            <input type="text" id="editAuthor" />
+          </label>
+          <label>
+            お気に入り度
+            <select id="editRating">
+              <option value="1">★1</option>
+              <option value="2">★2</option>
+              <option value="3">★3</option>
+              <option value="4">★4</option>
+              <option value="5">★5</option>
+            </select>
+          </label>
+          <label>
+            ハッシュタグ（カンマ区切り or #tag 形式）
+            <input type="text" id="editTags" />
+          </label>
+          <label>
+            選定背景（1行1項目）
+            <textarea id="editSelection" rows="4"></textarea>
+          </label>
+          <label>
+            印象点（1行1項目）
+            <textarea id="editImpressions" rows="5"></textarea>
+          </label>
+          <label>
+            AmazonアフィリエイトURL
+            <input type="url" id="editAffiliateUrl" placeholder="https://..." />
+          </label>
+          <label>
+            表紙画像（jpg / png）
+            <input type="file" id="editCoverImage" accept="image/png, image/jpeg" />
+          </label>
+          <div class="image-preview">
+            <span>プレビュー</span>
+            <img id="coverPreview" alt="表紙プレビュー" />
+          </div>
+        </div>
+        <div class="edit-footer">
+          <button class="button" type="button" id="clearCoverImage">
+            表紙画像をクリア
+          </button>
+          <button class="button danger" type="button" id="deleteBook">
+            削除
+          </button>
+          <button class="button primary" type="submit">保存</button>
+        </div>
+      </form>
+    </dialog>
+
+    <footer class="site-footer">
+      <div class="container">
+        <p>Amazonアソシエイトリンクは各カードの「Amazonで見る」から設定できます。</p>
+      </div>
+    </footer>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
