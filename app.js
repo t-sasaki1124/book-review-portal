@@ -149,10 +149,7 @@ const renderCards = (items) => {
   }
 
   items.forEach((book) => {
-    const affiliateLabel = book.affiliateUrl
-      ? "Amazonで見る"
-      : "Amazonリンクを追加";
-    const affiliateHref = book.affiliateUrl || "#";
+    const affiliateHref = book.affiliateUrl || "";
     const coverContent = book.coverImage
       ? `<img src="${book.coverImage}" alt="${book.title}の表紙" />`
       : `<span>画像なし</span>`;
@@ -185,9 +182,11 @@ const renderCards = (items) => {
           ${renderNotes(book.notes)}
         </div>
         <div class="card-actions">
-          <a class="button primary" href="${affiliateHref}" target="_blank" rel="noreferrer">
-            ${affiliateLabel}
-          </a>
+          ${
+            affiliateHref
+              ? `<a class="button primary" href="${affiliateHref}" target="_blank" rel="noreferrer">Amazonで見る</a>`
+              : ""
+          }
           <button class="button" type="button" data-edit="${book.order}">
             編集
           </button>
