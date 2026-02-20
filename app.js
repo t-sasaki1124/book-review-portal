@@ -40,6 +40,7 @@ const editTags = document.getElementById("editTags");
 const editSelection = document.getElementById("editSelection");
 const editImpressions = document.getElementById("editImpressions");
 const editAffiliateUrl = document.getElementById("editAffiliateUrl");
+const editRakutenUrl = document.getElementById("editRakutenUrl");
 const editCoverImage = document.getElementById("editCoverImage");
 const coverPreview = document.getElementById("coverPreview");
 const clearCoverImage = document.getElementById("clearCoverImage");
@@ -91,6 +92,7 @@ const sanitizeBook = (raw, fallbackOrder) => {
     ? raw.tags.map((tag) => String(tag).trim()).filter(Boolean)
     : [];
   const affiliateUrl = String(raw.affiliateUrl || "").trim();
+  const rakutenUrl = String(raw.rakutenUrl || "").trim();
   const coverImage = String(raw.coverImage || "").trim();
   const notes = raw.notes || {};
   const selectionBackground = Array.isArray(notes.selectionBackground)
@@ -106,6 +108,7 @@ const sanitizeBook = (raw, fallbackOrder) => {
     rating: rating >= 1 && rating <= 5 ? rating : 3,
     tags,
     affiliateUrl,
+    rakutenUrl,
     coverImage,
     notes: { selectionBackground, impressions },
   };
@@ -150,6 +153,7 @@ const renderCards = (items) => {
 
   items.forEach((book) => {
     const affiliateHref = book.affiliateUrl || "";
+    const rakutenHref = book.rakutenUrl || "";
     const coverContent = book.coverImage
       ? `<img src="${book.coverImage}" alt="${book.title}の表紙" />`
       : `<span>画像なし</span>`;
@@ -184,7 +188,12 @@ const renderCards = (items) => {
         <div class="card-actions">
           ${
             affiliateHref
-              ? `<a class="button primary" href="${affiliateHref}" target="_blank" rel="noreferrer">Amazonで見る</a>`
+              ? `<a class="button amazon" href="${affiliateHref}" target="_blank" rel="noreferrer">Amazonで見る</a>`
+              : ""
+          }
+          ${
+            rakutenHref
+              ? `<a class="button rakuten" href="${rakutenHref}" target="_blank" rel="noreferrer">楽天で見る</a>`
               : ""
           }
           <button class="button" type="button" data-edit="${book.order}">
@@ -452,6 +461,7 @@ const openEditDialog = (order) => {
   editSelection.value = (book.notes.selectionBackground || []).join("\n");
   editImpressions.value = (book.notes.impressions || []).join("\n");
   editAffiliateUrl.value = book.affiliateUrl || "";
+  editRakutenUrl.value = book.rakutenUrl || "";
   pendingCoverImage = book.coverImage || "";
   coverPreview.src = pendingCoverImage;
   coverPreview.style.display = pendingCoverImage ? "block" : "none";
@@ -471,6 +481,7 @@ const openCreateDialog = () => {
   editSelection.value = "";
   editImpressions.value = "";
   editAffiliateUrl.value = "";
+  editRakutenUrl.value = "";
   pendingCoverImage = "";
   coverPreview.src = "";
   coverPreview.style.display = "none";
@@ -510,6 +521,7 @@ editForm.addEventListener("submit", (event) => {
     rating: Number(editRating.value) || 3,
     tags: parseTags(editTags.value),
     affiliateUrl: editAffiliateUrl.value.trim(),
+    rakutenUrl: editRakutenUrl.value.trim(),
     coverImage: pendingCoverImage,
     notes: {
       selectionBackground: parseLines(editSelection.value),
