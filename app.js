@@ -29,6 +29,7 @@ const viewGridButton = document.getElementById("viewGridButton");
 const exportButton = document.getElementById("exportButton");
 const importButton = document.getElementById("importButton");
 const importFile = document.getElementById("importFile");
+const importDialog = document.getElementById("importDialog");
 const editDialog = document.getElementById("editDialog");
 const editForm = document.getElementById("editForm");
 const editDialogTitle = document.getElementById("editDialogTitle");
@@ -280,6 +281,20 @@ const refreshView = () => {
   renderCards(sorted);
 };
 
+const chooseImportMode = () =>
+  new Promise((resolve) => {
+    const handler = (event) => {
+      const button = event.target.closest("[data-import-choice]");
+      if (!button) return;
+      const choice = button.dataset.importChoice;
+      importDialog.close();
+      importDialog.removeEventListener("click", handler);
+      resolve(choice);
+    };
+    importDialog.addEventListener("click", handler);
+    importDialog.showModal();
+  });
+
 sortSelect.addEventListener("change", refreshView);
 searchInput.addEventListener("input", refreshView);
 tagFilter.addEventListener("change", refreshView);
@@ -325,10 +340,11 @@ importFile.addEventListener("change", async (event) => {
       alert("取り込めるデータがありませんでした。");
       return;
     }
-    const overwrite = confirm(
-      "インポートしたデータで上書きしますか？\nOK: 上書き / キャンセル: 既存に追加"
-    );
-    if (overwrite) {
+    const choice = await chooseImportMode();
+    if (choice === "cancel") {
+      return;
+    }
+    if (choice === "overwrite") {
       books = sanitized.map((book, index) => ({ ...book, order: index + 1 }));
     } else {
       sanitized.forEach((book) => {

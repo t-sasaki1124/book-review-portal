@@ -426,6 +426,21 @@ input[type="search"] {
   background: rgba(255, 255, 255, 0.9);
 }
 
+.choice-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+
+#importDialog .edit-form {
+  text-align: center;
+}
+
+#importDialog .edit-header {
+  justify-content: center;
+}
+
 .edit-footer {
   display: flex;
   justify-content: space-between;

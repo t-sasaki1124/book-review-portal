@@ -161,6 +161,26 @@
       </form>
     </dialog>
 
+    <dialog id="importDialog" class="edit-dialog">
+      <div class="edit-form">
+        <div class="edit-header">
+          <h2>インポート方法</h2>
+        </div>
+        <p>インポートしたデータをどう扱いますか？</p>
+        <div class="choice-actions">
+          <button class="button danger" type="button" data-import-choice="overwrite">
+            上書き
+          </button>
+          <button class="button primary" type="button" data-import-choice="append">
+            既存に追加
+          </button>
+          <button class="button" type="button" data-import-choice="cancel">
+            キャンセル
+          </button>
+        </div>
+      </div>
+    </dialog>
+
     <footer class="site-footer">
       <div class="container">
         <p>© 2026 書評ポータル</p>
