@@ -202,7 +202,7 @@ const renderCards = (items) => {
     window.setTimeout(() => {
       reorderedCards.forEach((card) => card.classList.remove("reordered"));
       lastReorderOrders = new Set();
-    }, 350);
+    }, 750);
   }
 };
 
@@ -349,6 +349,35 @@ const canDrag = () =>
   ratingFilter.value === "" &&
   viewMode === "list";
 
+const animateReorder = (previousPositions) => {
+  if (!previousPositions || previousPositions.size === 0) return;
+  window.requestAnimationFrame(() => {
+    cardGrid.querySelectorAll(".card").forEach((card) => {
+      const order = Number(card.dataset.order);
+      const prev = previousPositions.get(order);
+      if (!prev) return;
+      const next = card.getBoundingClientRect();
+      const dx = prev.left - next.left;
+      const dy = prev.top - next.top;
+      if (dx === 0 && dy === 0) return;
+      card.style.transform = `translate(${dx}px, ${dy}px)`;
+      card.style.transition = "transform 0s";
+      window.requestAnimationFrame(() => {
+        card.style.transition = "transform 600ms ease";
+        card.style.transform = "translate(0, 0)";
+      });
+      card.addEventListener(
+        "transitionend",
+        () => {
+          card.style.transition = "";
+          card.style.transform = "";
+        },
+        { once: true }
+      );
+    });
+  });
+};
+
 cardGrid.addEventListener("dragstart", (event) => {
   const handle = event.target.closest?.(".drag-handle");
   if (!handle) return;
@@ -384,6 +413,12 @@ cardGrid.addEventListener("drop", (event) => {
   if (!card) return;
   event.preventDefault();
   card.classList.remove("drag-over");
+  const previousPositions = new Map(
+    Array.from(cardGrid.querySelectorAll(".card"), (cardItem) => [
+      Number(cardItem.dataset.order),
+      cardItem.getBoundingClientRect(),
+    ])
+  );
   const targetOrder = Number(card.dataset.order);
   if (targetOrder === draggedOrder) {
     draggedOrder = null;
@@ -402,6 +437,7 @@ cardGrid.addEventListener("drop", (event) => {
   lastReorderOrders = new Set([dragged.order, target.order]);
   draggedOrder = null;
   refreshView();
+  animateReorder(previousPositions);
 });
 
 const openEditDialog = (order) => {

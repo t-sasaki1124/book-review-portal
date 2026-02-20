@@ -3,15 +3,15 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>書評ポータル</title>
+    <title>book-review-portal</title>
     <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
     <header class="site-header">
       <div class="container">
-        <h1>書評ポータル</h1>
-        <p class="subtitle">読書メモを一覧で見やすく整理するテンプレート</p>
+        <h1>Book-Review-Portal</h1>
+        <p class="subtitle">読書メモを一覧で表示</p>
       </div>
     </header>
 
@@ -48,11 +48,11 @@
           <label for="ratingFilter">評価</label>
           <select id="ratingFilter">
             <option value="">すべて</option>
-            <option value="5">★5</option>
-            <option value="4">★4</option>
-            <option value="3">★3</option>
-            <option value="2">★2</option>
-            <option value="1">★1</option>
+            <option value="5">★★★★★</option>
+            <option value="4">★★★★</option>
+            <option value="3">★★★</option>
+            <option value="2">★★</option>
+            <option value="1">★</option>
           </select>
         </div>
         <div class="control-group">
@@ -73,7 +73,7 @@
           </div>
         </div>
         <div class="control-group">
-          <label>バックアップ</label>
+          <label>JSON入出力</label>
           <div class="toggle-group">
             <button class="button" type="button" id="exportButton">
               エクスポート
@@ -113,11 +113,11 @@
           <label>
             お気に入り度
             <select id="editRating">
-              <option value="1">★1</option>
-              <option value="2">★2</option>
-              <option value="3">★3</option>
-              <option value="4">★4</option>
-              <option value="5">★5</option>
+              <option value="1">★</option>
+              <option value="2">★★</option>
+              <option value="3">★★★</option>
+              <option value="4">★★★★</option>
+              <option value="5">★★★★★</option>
             </select>
           </label>
           <label>
@@ -125,11 +125,11 @@
             <input type="text" id="editTags" />
           </label>
           <label>
-            選定背景（1行1項目）
+            選定背景
             <textarea id="editSelection" rows="4"></textarea>
           </label>
           <label>
-            印象点（1行1項目）
+            印象点
             <textarea id="editImpressions" rows="5"></textarea>
           </label>
           <label>
