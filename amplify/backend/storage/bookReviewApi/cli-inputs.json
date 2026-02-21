@@ -1,0 +1,10 @@
+{
+  "resourceName": "bookReviewApi",
+  "tableName": "BookReviewTable",
+  "partitionKey": {
+    "fieldName": "id",
+    "fieldType": "string"
+  },
+  "gsi": [],
+  "triggerFunctions": []
+}

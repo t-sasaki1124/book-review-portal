@@ -1,22 +1,23 @@
-const STORAGE_KEY = "bookReviewPortal.books";
+const API_BASE_URL =
+  "https://5blj3svatd.execute-api.ap-northeast-1.amazonaws.com/dev";
+const API_BOOKS_URL = `${API_BASE_URL}/books`;
 
-const loadBooksFromStorage = () => {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed;
-  } catch {
-    return [];
+const apiRequest = async (url, options = {}) => {
+  const response = await fetch(url, {
+    headers: {
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    },
+    ...options,
+  });
+  if (!response.ok) {
+    throw new Error(`api_error_${response.status}`);
   }
+  const text = await response.text();
+  return text ? JSON.parse(text) : null;
 };
 
-const saveBooksToStorage = () => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(books));
-};
-
-let books = loadBooksFromStorage();
+let books = [];
 
 const sortSelect = document.getElementById("sortSelect");
 const searchInput = document.getElementById("searchInput");
@@ -49,7 +50,7 @@ const clearCoverImage = document.getElementById("clearCoverImage");
 const deleteBook = document.getElementById("deleteBook");
 const addBookButton = document.getElementById("addBookButton");
 
-let editingOrder = null;
+let editingBookId = null;
 let pendingCoverImage = "";
 let isCreateMode = false;
 let lastReorderOrders = new Set();
@@ -96,6 +97,7 @@ const sanitizeBook = (raw, fallbackOrder) => {
     : [];
   const affiliateUrl = String(raw.affiliateUrl || "").trim();
   const rakutenUrl = String(raw.rakutenUrl || "").trim();
+  const bookId = String(raw.bookId || "").trim();
   const coverImage = String(raw.coverImage || "").trim();
   const notes = raw.notes || {};
   const selectionBackground = Array.isArray(notes.selectionBackground)
@@ -106,6 +108,7 @@ const sanitizeBook = (raw, fallbackOrder) => {
     : [];
   return {
     order: Number(raw.order) || fallbackOrder,
+    bookId,
     title,
     author,
     rating: rating >= 1 && rating <= 5 ? rating : 3,
@@ -115,6 +118,50 @@ const sanitizeBook = (raw, fallbackOrder) => {
     coverImage,
     notes: { selectionBackground, impressions },
   };
+};
+
+const ensureBookId = (book) => {
+  if (book.bookId) return book;
+  return {
+    ...book,
+    bookId: crypto.randomUUID?.() || String(Date.now()),
+  };
+};
+
+const loadBooksFromApi = async () => {
+  const data = await apiRequest(API_BOOKS_URL);
+  books = Array.isArray(data)
+    ? data.map((item, index) => sanitizeBook(item, index + 1)).filter(Boolean)
+    : [];
+};
+
+const createBookApi = async (payload) =>
+  apiRequest(API_BOOKS_URL, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+
+const updateBookApi = async (bookId, payload) =>
+  apiRequest(`${API_BOOKS_URL}/${bookId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+
+const deleteBookApi = async (bookId) =>
+  apiRequest(`${API_BOOKS_URL}/${bookId}`, { method: "DELETE" });
+
+const replaceAllBooksApi = async (items) => {
+  const existing = await apiRequest(API_BOOKS_URL);
+  if (Array.isArray(existing)) {
+    for (const item of existing) {
+      if (item.bookId) {
+        await deleteBookApi(item.bookId);
+      }
+    }
+  }
+  for (const item of items) {
+    await createBookApi(item);
+  }
 };
 
 const renderNotes = (notes) => {
@@ -201,7 +248,7 @@ const renderCards = (items) => {
               ? `<a class="button rakuten" href="${rakutenHref}" target="_blank" rel="noreferrer">楽天で見る</a>`
               : ""
           }
-          <button class="button" type="button" data-edit="${book.order}">
+          <button class="button" type="button" data-edit="${book.bookId}">
             編集
           </button>
         </div>
@@ -302,7 +349,7 @@ const getFilteredBooks = (items, keyword, tag, rating) => {
   return result;
 };
 
-const refreshView = async () => {
+const refreshView = () => {
   updateTagOptions();
   const filtered = getFilteredBooks(
     books,
@@ -366,6 +413,7 @@ importFile.addEventListener("change", async (event) => {
   const file = event.target.files?.[0];
   if (!file) return;
   try {
+    await loadBooksFromApi();
     const text = await file.text();
     const parsed = JSON.parse(text);
     if (!Array.isArray(parsed)) {
@@ -384,13 +432,19 @@ importFile.addEventListener("change", async (event) => {
       return;
     }
     if (choice === "overwrite") {
-      books = sanitized.map((book, index) => ({ ...book, order: index + 1 }));
+      const normalized = sanitized.map((book, index) =>
+        ensureBookId({ ...book, order: index + 1 })
+      );
+      await replaceAllBooksApi(normalized);
     } else {
-      sanitized.forEach((book) => {
-        books.push({ ...book, order: nextOrderNumber() });
-      });
+      let order = nextOrderNumber();
+      for (const book of sanitized) {
+        const item = ensureBookId({ ...book, order });
+        await createBookApi(item);
+        order += 1;
+      }
     }
-    saveBooksToStorage();
+    await loadBooksFromApi();
     refreshView();
   } catch {
     alert("ファイルの読み込みに失敗しました。");
@@ -400,9 +454,10 @@ importFile.addEventListener("change", async (event) => {
 clearAllButton.addEventListener("click", () => {
   const confirmed = confirm("全件削除しますか？この操作は元に戻せません。");
   if (!confirmed) return;
-  books = [];
-  saveBooksToStorage();
-  refreshView();
+  replaceAllBooksApi([])
+    .then(loadBooksFromApi)
+    .then(refreshView)
+    .catch(() => alert("全件削除に失敗しました。"));
 });
 
 cardGrid.addEventListener("click", (event) => {
@@ -410,13 +465,13 @@ cardGrid.addEventListener("click", (event) => {
   if (!(target instanceof HTMLButtonElement)) return;
   const action = target.dataset.action;
   if (action === "import-sample") {
-    loadSampleBooks().then(() => {
+    loadSampleBooks().then(async () => {
       if (!sampleBooks.length) return;
-      books = sampleBooks.map((book, index) => ({
-        ...book,
-        order: index + 1,
-      }));
-      saveBooksToStorage();
+      const normalized = sampleBooks.map((book, index) =>
+        ensureBookId({ ...book, order: index + 1 })
+      );
+      await replaceAllBooksApi(normalized);
+      await loadBooksFromApi();
       refreshView();
     });
     return;
@@ -424,8 +479,7 @@ cardGrid.addEventListener("click", (event) => {
   const editOrder = target.dataset.edit;
 
   if (editOrder) {
-    const order = Number(editOrder);
-    openEditDialog(order);
+    openEditDialog(editOrder);
   }
 });
 
@@ -522,18 +576,25 @@ cardGrid.addEventListener("drop", (event) => {
   const temp = dragged.order;
   dragged.order = target.order;
   target.order = temp;
-  saveBooksToStorage();
-  lastReorderOrders = new Set([dragged.order, target.order]);
-  draggedOrder = null;
-  refreshView();
-  animateReorder(previousPositions);
+  Promise.all([
+    updateBookApi(dragged.bookId, dragged),
+    updateBookApi(target.bookId, target),
+  ])
+    .then(loadBooksFromApi)
+    .then(() => {
+      lastReorderOrders = new Set([dragged.order, target.order]);
+      draggedOrder = null;
+      refreshView();
+      animateReorder(previousPositions);
+    })
+    .catch(() => alert("並び替えに失敗しました。"));
 });
 
-const openEditDialog = (order) => {
-  const book = books.find((item) => item.order === order);
+const openEditDialog = (bookId) => {
+  const book = books.find((item) => item.bookId === bookId);
   if (!book) return;
   isCreateMode = false;
-  editingOrder = order;
+  editingBookId = bookId;
   editDialogTitle.textContent = "書評を編集";
   editTitle.value = book.title;
   editAuthor.value = book.author;
@@ -553,7 +614,7 @@ const openEditDialog = (order) => {
 
 const openCreateDialog = () => {
   isCreateMode = true;
-  editingOrder = null;
+  editingBookId = null;
   editDialogTitle.textContent = "新しい本を追加";
   editTitle.value = "";
   editAuthor.value = "";
@@ -587,7 +648,7 @@ const parseTags = (value) => {
     .map((tag) => tag.replace(/^#/, ""));
 };
 
-editForm.addEventListener("submit", (event) => {
+editForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const title = editTitle.value.trim();
   if (!title) {
@@ -610,25 +671,31 @@ editForm.addEventListener("submit", (event) => {
     },
   };
 
-  if (isCreateMode) {
-    books.push({
-      order: nextOrderNumber(),
-      rating: 3,
-      ...payload,
-    });
-    saveBooksToStorage();
+  try {
+    if (isCreateMode) {
+      const newBook = ensureBookId({
+        order: nextOrderNumber(),
+        rating: 3,
+        ...payload,
+      });
+      await createBookApi(newBook);
+      await loadBooksFromApi();
+      editDialog.close();
+      refreshView();
+      return;
+    }
+
+    if (!editingBookId) return;
+    const book = books.find((item) => item.bookId === editingBookId);
+    if (!book) return;
+    const updated = { ...book, ...payload, bookId: book.bookId };
+    await updateBookApi(book.bookId, updated);
+    await loadBooksFromApi();
     editDialog.close();
     refreshView();
-    return;
+  } catch {
+    alert("保存に失敗しました。");
   }
-
-  if (editingOrder === null) return;
-  const book = books.find((item) => item.order === editingOrder);
-  if (!book) return;
-  Object.assign(book, payload);
-  saveBooksToStorage();
-  editDialog.close();
-  refreshView();
 });
 
 closeDialogButton.addEventListener("click", () => {
@@ -636,17 +703,18 @@ closeDialogButton.addEventListener("click", () => {
 });
 
 deleteBook.addEventListener("click", () => {
-  if (editingOrder === null) return;
-  const book = books.find((item) => item.order === editingOrder);
+  if (!editingBookId) return;
+  const book = books.find((item) => item.bookId === editingBookId);
   if (!book) return;
   const confirmed = confirm(`「${book.title}」を削除しますか？`);
   if (!confirmed) return;
-  const index = books.findIndex((item) => item.order === editingOrder);
-  if (index === -1) return;
-  books.splice(index, 1);
-  saveBooksToStorage();
-  editDialog.close();
-  refreshView();
+  deleteBookApi(book.bookId)
+    .then(loadBooksFromApi)
+    .then(() => {
+      editDialog.close();
+      refreshView();
+    })
+    .catch(() => alert("削除に失敗しました。"));
 });
 
 addBookButton.addEventListener("click", () => {
@@ -698,4 +766,8 @@ const resizeImage = (file, maxWidth, maxHeight, quality) =>
   });
 
 setViewMode("list");
-refreshView();
+loadBooksFromApi()
+  .then(refreshView)
+  .catch(() => {
+    alert("データの取得に失敗しました。");
+  });

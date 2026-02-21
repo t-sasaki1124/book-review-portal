@@ -1,0 +1,29 @@
+{
+  "dev": {
+    "awscloudformation": {
+      "AuthRoleName": "amplify-bookreviewportal-dev-9a42a-authRole",
+      "UnauthRoleArn": "arn:aws:iam::637423496221:role/amplify-bookreviewportal-dev-9a42a-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::637423496221:role/amplify-bookreviewportal-dev-9a42a-authRole",
+      "Region": "ap-northeast-1",
+      "DeploymentBucketName": "amplify-bookreviewportal-dev-9a42a-deployment",
+      "UnauthRoleName": "amplify-bookreviewportal-dev-9a42a-unauthRole",
+      "StackName": "amplify-bookreviewportal-dev-9a42a",
+      "StackId": "arn:aws:cloudformation:ap-northeast-1:637423496221:stack/amplify-bookreviewportal-dev-9a42a/41127610-0ee3-11f1-bb45-0a21a1642659",
+      "AmplifyAppId": "dlu4u88cxo4jk"
+    },
+    "categories": {
+      "function": {
+        "bookfunction": {
+          "deploymentBucketName": "amplify-bookreviewportal-dev-9a42a-deployment",
+          "s3Key": "amplify-builds/bookfunction-6c427a55794a326b4473-build.zip"
+        }
+      },
+      "storage": {
+        "bookReviewApi": {}
+      },
+      "api": {
+        "bookReviewApi": {}
+      }
+    }
+  }
+}
