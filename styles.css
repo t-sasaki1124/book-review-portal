@@ -324,8 +324,8 @@ input[type="search"] {
 }
 
 .site-footer {
-  background: #0f172a;
-  color: #cbd5f5;
+  background: linear-gradient(135deg, #3a2a20 0%, #4a3326 40%, #5b3a2a 100%);
+  color: #f4e9dc;
   font-size: 12px;
   padding: 18px 0;
   text-align: center;
