@@ -30,6 +30,7 @@ const exportButton = document.getElementById("exportButton");
 const importButton = document.getElementById("importButton");
 const importFile = document.getElementById("importFile");
 const importDialog = document.getElementById("importDialog");
+const clearAllButton = document.getElementById("clearAllButton");
 const editDialog = document.getElementById("editDialog");
 const editForm = document.getElementById("editForm");
 const editDialogTitle = document.getElementById("editDialogTitle");
@@ -53,6 +54,7 @@ let pendingCoverImage = "";
 let isCreateMode = false;
 let lastReorderOrders = new Set();
 let viewMode = "list";
+let sampleBooks = [];
 
 const createStars = (rating) => {
   const maxStars = 5;
@@ -141,12 +143,14 @@ const renderNotes = (notes) => {
 
 const renderCards = (items) => {
   cardGrid.innerHTML = "";
-  totalCount.textContent = items.length;
 
   if (!items.length) {
     cardGrid.innerHTML = `
       <div class="empty-state">
         <p>該当する書籍がありませんでした。</p>
+        <button class="button" type="button" data-action="import-sample">
+          サンプルをインポートして表示する
+        </button>
       </div>
     `;
     return;
@@ -215,6 +219,35 @@ const renderCards = (items) => {
   }
 };
 
+const loadSampleBooks = async () => {
+  if (sampleBooks.length) return;
+  try {
+    let data = null;
+    if (Array.isArray(window.SAMPLE_BOOKS)) {
+      data = window.SAMPLE_BOOKS;
+    } else {
+      const response = await fetch("./sample.json", { cache: "no-store" });
+      if (!response.ok) {
+        alert("sample.json が見つかりませんでした。");
+        return;
+      }
+      data = await response.json();
+    }
+    if (!Array.isArray(data)) {
+      alert("sample.json の形式が正しくありません。");
+      return;
+    }
+    sampleBooks = data
+      .map((item, index) => sanitizeBook(item, index + 1))
+      .filter(Boolean);
+    if (!sampleBooks.length) {
+      alert("sample.json の中身が空でした。");
+    }
+  } catch {
+    alert("sample.json の読み込みに失敗しました。");
+  }
+};
+
 const getSortedBooks = (items, sortKey) => {
   const sorted = [...items];
   const [key, direction] = sortKey.split("-");
@@ -269,7 +302,7 @@ const getFilteredBooks = (items, keyword, tag, rating) => {
   return result;
 };
 
-const refreshView = () => {
+const refreshView = async () => {
   updateTagOptions();
   const filtered = getFilteredBooks(
     books,
@@ -278,6 +311,12 @@ const refreshView = () => {
     ratingFilter.value
   );
   const sorted = getSortedBooks(filtered, sortSelect.value);
+  if (books.length === 0) {
+    totalCount.textContent = "0";
+    renderCards([]);
+    return;
+  }
+  totalCount.textContent = String(sorted.length);
   renderCards(sorted);
 };
 
@@ -358,9 +397,30 @@ importFile.addEventListener("change", async (event) => {
   }
 });
 
+clearAllButton.addEventListener("click", () => {
+  const confirmed = confirm("全件削除しますか？この操作は元に戻せません。");
+  if (!confirmed) return;
+  books = [];
+  saveBooksToStorage();
+  refreshView();
+});
+
 cardGrid.addEventListener("click", (event) => {
   const target = event.target;
   if (!(target instanceof HTMLButtonElement)) return;
+  const action = target.dataset.action;
+  if (action === "import-sample") {
+    loadSampleBooks().then(() => {
+      if (!sampleBooks.length) return;
+      books = sampleBooks.map((book, index) => ({
+        ...book,
+        order: index + 1,
+      }));
+      saveBooksToStorage();
+      refreshView();
+    });
+    return;
+  }
   const editOrder = target.dataset.edit;
 
   if (editOrder) {
