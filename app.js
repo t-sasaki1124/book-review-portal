@@ -50,7 +50,7 @@ const clearCoverImage = document.getElementById("clearCoverImage");
 const deleteBook = document.getElementById("deleteBook");
 const addBookButton = document.getElementById("addBookButton");
 
-let editingBookId = null;
+let editingId = null;
 let pendingCoverImage = "";
 let isCreateMode = false;
 let lastReorderOrders = new Set();
@@ -97,7 +97,7 @@ const sanitizeBook = (raw, fallbackOrder) => {
     : [];
   const affiliateUrl = String(raw.affiliateUrl || "").trim();
   const rakutenUrl = String(raw.rakutenUrl || "").trim();
-  const bookId = String(raw.bookId || "").trim();
+  const id = String(raw.id || "").trim();
   const coverImage = String(raw.coverImage || "").trim();
   const notes = raw.notes || {};
   const selectionBackground = Array.isArray(notes.selectionBackground)
@@ -108,7 +108,7 @@ const sanitizeBook = (raw, fallbackOrder) => {
     : [];
   return {
     order: Number(raw.order) || fallbackOrder,
-    bookId,
+    id,
     title,
     author,
     rating: rating >= 1 && rating <= 5 ? rating : 3,
@@ -120,11 +120,11 @@ const sanitizeBook = (raw, fallbackOrder) => {
   };
 };
 
-const ensureBookId = (book) => {
-  if (book.bookId) return book;
+const ensureId = (book) => {
+  if (book.id) return book;
   return {
     ...book,
-    bookId: crypto.randomUUID?.() || String(Date.now()),
+    id: crypto.randomUUID?.() || String(Date.now()),
   };
 };
 
@@ -141,21 +141,21 @@ const createBookApi = async (payload) =>
     body: JSON.stringify(payload),
   });
 
-const updateBookApi = async (bookId, payload) =>
-  apiRequest(`${API_BOOKS_URL}/${bookId}`, {
+const updateBookApi = async (id, payload) =>
+  apiRequest(`${API_BOOKS_URL}/${id}`, {
     method: "PUT",
     body: JSON.stringify(payload),
   });
 
-const deleteBookApi = async (bookId) =>
-  apiRequest(`${API_BOOKS_URL}/${bookId}`, { method: "DELETE" });
+const deleteBookApi = async (id) =>
+  apiRequest(`${API_BOOKS_URL}/${id}`, { method: "DELETE" });
 
 const replaceAllBooksApi = async (items) => {
   const existing = await apiRequest(API_BOOKS_URL);
   if (Array.isArray(existing)) {
     for (const item of existing) {
-      if (item.bookId) {
-        await deleteBookApi(item.bookId);
+      if (item.id) {
+        await deleteBookApi(item.id);
       }
     }
   }
@@ -248,7 +248,7 @@ const renderCards = (items) => {
               ? `<a class="button rakuten" href="${rakutenHref}" target="_blank" rel="noreferrer">楽天で見る</a>`
               : ""
           }
-          <button class="button" type="button" data-edit="${book.bookId}">
+          <button class="button" type="button" data-edit="${book.id}">
             編集
           </button>
         </div>
@@ -433,13 +433,13 @@ importFile.addEventListener("change", async (event) => {
     }
     if (choice === "overwrite") {
       const normalized = sanitized.map((book, index) =>
-        ensureBookId({ ...book, order: index + 1 })
+        ensureId({ ...book, order: index + 1 })
       );
       await replaceAllBooksApi(normalized);
     } else {
       let order = nextOrderNumber();
       for (const book of sanitized) {
-        const item = ensureBookId({ ...book, order });
+        const item = ensureId({ ...book, order });
         await createBookApi(item);
         order += 1;
       }
@@ -468,7 +468,7 @@ cardGrid.addEventListener("click", (event) => {
     loadSampleBooks().then(async () => {
       if (!sampleBooks.length) return;
       const normalized = sampleBooks.map((book, index) =>
-        ensureBookId({ ...book, order: index + 1 })
+        ensureId({ ...book, order: index + 1 })
       );
       await replaceAllBooksApi(normalized);
       await loadBooksFromApi();
@@ -576,10 +576,7 @@ cardGrid.addEventListener("drop", (event) => {
   const temp = dragged.order;
   dragged.order = target.order;
   target.order = temp;
-  Promise.all([
-    updateBookApi(dragged.bookId, dragged),
-    updateBookApi(target.bookId, target),
-  ])
+  Promise.all([updateBookApi(dragged.id, dragged), updateBookApi(target.id, target)])
     .then(loadBooksFromApi)
     .then(() => {
       lastReorderOrders = new Set([dragged.order, target.order]);
@@ -590,11 +587,11 @@ cardGrid.addEventListener("drop", (event) => {
     .catch(() => alert("並び替えに失敗しました。"));
 });
 
-const openEditDialog = (bookId) => {
-  const book = books.find((item) => item.bookId === bookId);
+const openEditDialog = (id) => {
+  const book = books.find((item) => item.id === id);
   if (!book) return;
   isCreateMode = false;
-  editingBookId = bookId;
+  editingId = id;
   editDialogTitle.textContent = "書評を編集";
   editTitle.value = book.title;
   editAuthor.value = book.author;
@@ -614,7 +611,7 @@ const openEditDialog = (bookId) => {
 
 const openCreateDialog = () => {
   isCreateMode = true;
-  editingBookId = null;
+  editingId = null;
   editDialogTitle.textContent = "新しい本を追加";
   editTitle.value = "";
   editAuthor.value = "";
@@ -673,7 +670,7 @@ editForm.addEventListener("submit", async (event) => {
 
   try {
     if (isCreateMode) {
-      const newBook = ensureBookId({
+      const newBook = ensureId({
         order: nextOrderNumber(),
         rating: 3,
         ...payload,
@@ -685,11 +682,11 @@ editForm.addEventListener("submit", async (event) => {
       return;
     }
 
-    if (!editingBookId) return;
-    const book = books.find((item) => item.bookId === editingBookId);
+    if (!editingId) return;
+    const book = books.find((item) => item.id === editingId);
     if (!book) return;
-    const updated = { ...book, ...payload, bookId: book.bookId };
-    await updateBookApi(book.bookId, updated);
+    const updated = { ...book, ...payload, id: book.id };
+    await updateBookApi(book.id, updated);
     await loadBooksFromApi();
     editDialog.close();
     refreshView();
@@ -703,12 +700,12 @@ closeDialogButton.addEventListener("click", () => {
 });
 
 deleteBook.addEventListener("click", () => {
-  if (!editingBookId) return;
-  const book = books.find((item) => item.bookId === editingBookId);
+  if (!editingId) return;
+  const book = books.find((item) => item.id === editingId);
   if (!book) return;
   const confirmed = confirm(`「${book.title}」を削除しますか？`);
   if (!confirmed) return;
-  deleteBookApi(book.bookId)
+  deleteBookApi(book.id)
     .then(loadBooksFromApi)
     .then(() => {
       editDialog.close();

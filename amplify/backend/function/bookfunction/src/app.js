@@ -20,7 +20,7 @@ const {
   DynamoDBDocumentClient,
   GetCommand,
   PutCommand,
-  QueryCommand,
+  ScanCommand,
 } = require("@aws-sdk/lib-dynamodb");
 const awsServerlessExpressMiddleware = require("aws-serverless-express/middleware");
 const bodyParser = require("body-parser");
@@ -30,11 +30,9 @@ const { randomUUID } = require("crypto");
 const ddbClient = new DynamoDBClient({ region: process.env.REGION });
 const ddbDocClient = DynamoDBDocumentClient.from(ddbClient);
 
-const tableName = process.env.STORAGE_BOOKREVIEWAPI_NAME || "BookReview";
-const partitionKeyName = "userId";
-const sortKeyName = "bookId";
+const tableName = process.env.STORAGE_BOOKREVIEWAPI_NAME || "BookReviewTable";
+const partitionKeyName = "id";
 const path = "/items";
-const DEFAULT_USER_ID = "public";
 
 const app = express();
 app.use(bodyParser.json({ limit: "2mb" }));
@@ -48,17 +46,12 @@ app.use((req, res, next) => {
 });
 
 app.options(path, (_, res) => res.status(200).send(""));
-app.options(path + "/:bookId", (_, res) => res.status(200).send(""));
+app.options(path + "/:id", (_, res) => res.status(200).send(""));
 
-const getUserId = (req) =>
-  req.apiGateway?.event?.requestContext?.identity?.cognitoIdentityId ||
-  DEFAULT_USER_ID;
-
-const normalizeBook = (payload, bookId) => {
+const normalizeBook = (payload, id) => {
   const safe = payload || {};
   return {
-    userId: safe.userId || DEFAULT_USER_ID,
-    bookId: bookId || safe.bookId || randomUUID(),
+    id: id || safe.id || randomUUID(),
     order: Number(safe.order) || 0,
     title: String(safe.title || "").trim(),
     author: String(safe.author || "").trim(),
@@ -72,30 +65,21 @@ const normalizeBook = (payload, bookId) => {
 };
 
 app.get(path, async (req, res) => {
-  const userId = getUserId(req);
-  const params = {
-    TableName: tableName,
-    KeyConditionExpression: `${partitionKeyName} = :userId`,
-    ExpressionAttributeValues: {
-      ":userId": userId,
-    },
-  };
-
   try {
-    const data = await ddbDocClient.send(new QueryCommand(params));
+    const data = await ddbDocClient.send(
+      new ScanCommand({ TableName: tableName })
+    );
     res.json(data.Items || []);
   } catch (err) {
     res.status(500).json({ error: "Could not load items: " + err.message });
   }
 });
 
-app.get(path + "/:bookId", async (req, res) => {
-  const userId = getUserId(req);
+app.get(path + "/:id", async (req, res) => {
   const params = {
     TableName: tableName,
     Key: {
-      userId,
-      bookId: req.params.bookId,
+      [partitionKeyName]: req.params.id,
     },
   };
   try {
@@ -107,9 +91,7 @@ app.get(path + "/:bookId", async (req, res) => {
 });
 
 app.post(path, async (req, res) => {
-  const userId = getUserId(req);
   const book = normalizeBook(req.body);
-  book.userId = userId;
   const params = {
     TableName: tableName,
     Item: book,
@@ -122,10 +104,8 @@ app.post(path, async (req, res) => {
   }
 });
 
-app.put(path + "/:bookId", async (req, res) => {
-  const userId = getUserId(req);
-  const book = normalizeBook(req.body, req.params.bookId);
-  book.userId = userId;
+app.put(path + "/:id", async (req, res) => {
+  const book = normalizeBook(req.body, req.params.id);
   const params = {
     TableName: tableName,
     Item: book,
@@ -138,13 +118,11 @@ app.put(path + "/:bookId", async (req, res) => {
   }
 });
 
-app.delete(path + "/:bookId", async (req, res) => {
-  const userId = getUserId(req);
+app.delete(path + "/:id", async (req, res) => {
   const params = {
     TableName: tableName,
     Key: {
-      userId,
-      bookId: req.params.bookId,
+      [partitionKeyName]: req.params.id,
     },
   };
   try {
