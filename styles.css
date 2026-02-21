@@ -8,7 +8,7 @@ body {
   margin: 0;
   font-family: "Segoe UI", "Noto Sans JP", system-ui, sans-serif;
   color: #0f172a;
-  background: radial-gradient(circle at top, #f8fafc 0%, #eef2ff 45%, #e2e8f0 100%);
+  background: radial-gradient(circle at top, #f6efe6 0%, #e9ddc9 45%, #d7c0a3 100%);
 }
 
 h1,
@@ -29,20 +29,21 @@ a {
 }
 
 .site-header {
-  background: linear-gradient(135deg, #111827 0%, #1e293b 40%, #1e1b4b 100%);
+  background: linear-gradient(135deg, #3a2a20 0%, #4a3326 40%, #5b3a2a 100%);
   color: #f8fafc;
   padding: 40px 0 28px;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  border-bottom: 1px solid rgba(120, 86, 62, 0.35);
 }
 
 .site-header h1 {
   font-size: 30px;
   letter-spacing: 0.08em;
+  font-family: "Segoe Script", "Brush Script MT", "Yu Mincho", cursive;
 }
 
 .subtitle {
   margin-top: 10px;
-  color: #cbd5f5;
+  color: #e7d6c4;
   font-size: 14px;
 }
 
