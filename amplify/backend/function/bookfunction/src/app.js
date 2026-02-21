@@ -33,7 +33,7 @@ const ddbDocClient = DynamoDBDocumentClient.from(ddbClient);
 const tableName = process.env.STORAGE_BOOKREVIEWAPI_NAME || "BookReview";
 const partitionKeyName = "userId";
 const sortKeyName = "bookId";
-const path = "/books";
+const path = "/items";
 const DEFAULT_USER_ID = "public";
 
 const app = express();

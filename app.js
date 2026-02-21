@@ -1,6 +1,6 @@
 const API_BASE_URL =
   "https://5blj3svatd.execute-api.ap-northeast-1.amazonaws.com/dev";
-const API_BOOKS_URL = `${API_BASE_URL}/books`;
+const API_BOOKS_URL = `${API_BASE_URL}/items`;
 
 const apiRequest = async (url, options = {}) => {
   const response = await fetch(url, {
