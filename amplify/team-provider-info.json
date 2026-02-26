@@ -15,7 +15,7 @@
       "function": {
         "bookfunction": {
           "deploymentBucketName": "amplify-bookreviewportal-dev-9a42a-deployment",
-          "s3Key": "amplify-builds/bookfunction-44333663447274482b6c-build.zip"
+          "s3Key": "amplify-builds/bookfunction-4d452f6f3431664c757a-build.zip"
         }
       },
       "storage": {
@@ -23,6 +23,9 @@
       },
       "api": {
         "bookReviewApi": {}
+      },
+      "auth": {
+        "bookreviewportal5fbf9608": {}
       }
     }
   }

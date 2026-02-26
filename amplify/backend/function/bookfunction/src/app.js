@@ -48,6 +48,12 @@ app.use((req, res, next) => {
 app.options(path, (_, res) => res.status(200).send(""));
 app.options(path + "/:id", (_, res) => res.status(200).send(""));
 
+const getUserId = (req) =>
+  req.query?.userId ||
+  req.body?.userId ||
+  req.apiGateway?.event?.requestContext?.identity?.cognitoIdentityId ||
+  null;
+
 const normalizeBook = (payload, id) => {
   const safe = payload || {};
   return {
@@ -65,10 +71,20 @@ const normalizeBook = (payload, id) => {
 };
 
 app.get(path, async (req, res) => {
+  const userId = getUserId(req);
+  if (!userId) {
+    res.status(400).json({ error: "userId_required" });
+    return;
+  }
+  const params = {
+    TableName: tableName,
+    FilterExpression: "userId = :userId",
+    ExpressionAttributeValues: {
+      ":userId": userId,
+    },
+  };
   try {
-    const data = await ddbDocClient.send(
-      new ScanCommand({ TableName: tableName })
-    );
+    const data = await ddbDocClient.send(new ScanCommand(params));
     res.json(data.Items || []);
   } catch (err) {
     res.status(500).json({ error: "Could not load items: " + err.message });
@@ -76,6 +92,11 @@ app.get(path, async (req, res) => {
 });
 
 app.get(path + "/:id", async (req, res) => {
+  const userId = getUserId(req);
+  if (!userId) {
+    res.status(400).json({ error: "userId_required" });
+    return;
+  }
   const params = {
     TableName: tableName,
     Key: {
@@ -84,6 +105,10 @@ app.get(path + "/:id", async (req, res) => {
   };
   try {
     const data = await ddbDocClient.send(new GetCommand(params));
+    if (!data.Item || data.Item.userId !== userId) {
+      res.json(null);
+      return;
+    }
     res.json(data.Item || null);
   } catch (err) {
     res.status(500).json({ error: "Could not load item: " + err.message });
@@ -91,7 +116,13 @@ app.get(path + "/:id", async (req, res) => {
 });
 
 app.post(path, async (req, res) => {
+  const userId = getUserId(req);
+  if (!userId) {
+    res.status(400).json({ error: "userId_required" });
+    return;
+  }
   const book = normalizeBook(req.body);
+  book.userId = userId;
   const params = {
     TableName: tableName,
     Item: book,
@@ -105,7 +136,13 @@ app.post(path, async (req, res) => {
 });
 
 app.put(path + "/:id", async (req, res) => {
+  const userId = getUserId(req);
+  if (!userId) {
+    res.status(400).json({ error: "userId_required" });
+    return;
+  }
   const book = normalizeBook(req.body, req.params.id);
+  book.userId = userId;
   const params = {
     TableName: tableName,
     Item: book,
@@ -119,14 +156,25 @@ app.put(path + "/:id", async (req, res) => {
 });
 
 app.delete(path + "/:id", async (req, res) => {
-  const params = {
-    TableName: tableName,
-    Key: {
-      [partitionKeyName]: req.params.id,
-    },
+  const userId = getUserId(req);
+  if (!userId) {
+    res.status(400).json({ error: "userId_required" });
+    return;
+  }
+  const key = {
+    [partitionKeyName]: req.params.id,
   };
   try {
-    await ddbDocClient.send(new DeleteCommand(params));
+    const existing = await ddbDocClient.send(
+      new GetCommand({ TableName: tableName, Key: key })
+    );
+    if (!existing.Item || existing.Item.userId !== userId) {
+      res.json({ success: false });
+      return;
+    }
+    await ddbDocClient.send(
+      new DeleteCommand({ TableName: tableName, Key: key })
+    );
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: "Could not delete item: " + err.message });

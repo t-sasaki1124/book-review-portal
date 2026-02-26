@@ -41,6 +41,25 @@ a {
   font-family: "Segoe Script", "Brush Script MT", "Yu Mincho", cursive;
 }
 
+.header-top {
+  display: block;
+}
+
+.account-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: nowrap;
+}
+
+.account-group label {
+  color: #7a533b;
+}
+
+.account-group {
+  min-width: 0;
+}
+
 .subtitle {
   margin-top: 10px;
   color: #e7d6c4;
@@ -447,4 +466,22 @@ input[type="search"] {
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
+}
+
+.sample-banner {
+  display: inline-block;
+  margin-left: 12px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(140, 91, 62, 0.15);
+  color: #6b4a34;
+  font-size: 0.85rem;
+}
+
+.button.is-disabled,
+.button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
 }

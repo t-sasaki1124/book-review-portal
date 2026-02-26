@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ログイン | Book Review Portal</title>
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./auth.css" />
+  </head>
+  <body data-auth-mode="signin">
+    <main class="auth-page">
+      <section class="auth-card">
+        <h1>Book Review Portal</h1>
+        <h2>ログイン</h2>
+        <p class="auth-subtitle">メールアドレスでログインしてください。</p>
+        <label>
+          メール
+          <input type="email" id="authEmail" autocomplete="username" />
+        </label>
+        <label>
+          パスワード
+          <input type="password" id="authPassword" autocomplete="current-password" />
+        </label>
+        <div class="auth-actions">
+          <button class="button primary" type="button" id="authSignIn">ログイン</button>
+          <a class="button ghost" href="./signup.html">新規登録</a>
+        </div>
+        <div class="auth-actions">
+          <a class="button ghost" href="./sample.html">サンプルを見る</a>
+        </div>
+        <p id="authMessage" class="auth-message"></p>
+      </section>
+    </main>
+    <script src="https://unpkg.com/aws-amplify@4.3.45/dist/aws-amplify.min.js"></script>
+    <script src="./src/aws-exports-global.js"></script>
+    <script src="./auth.js"></script>
+  </body>
+</html>

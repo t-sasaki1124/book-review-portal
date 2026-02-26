@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Book Review Portal</title>
+    <title>Book Review Portal - Sample</title>
     <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
@@ -13,11 +13,17 @@
         <div class="header-top">
           <h1>Book Review Portal</h1>
         </div>
-        <p class="subtitle">一冊の本から受け取った刺激を、鮮やかなうちにここに留めておく。 <br>タイトルや感想を積み上げるほど、あなたの中に「自分だけの知性」が育ちます。 <br>読んだ本を忘れない。それだけで、世界の見え方は少しずつ変わっていきます。</p>
+        <p class="subtitle">
+          一冊の本から受け取った刺激を、鮮やかなうちにここに留めておく。
+          <br />
+          タイトルや感想を積み上げるほど、あなたの中に「自分だけの知性」が育ちます。
+          <br />
+          読んだ本を忘れない。それだけで、世界の見え方は少しずつ変わっていきます。
+        </p>
       </div>
     </header>
 
-        <main class="container">
+    <main class="container">
       <section class="controls">
         <div class="control-group">
           <label for="sortSelect">並び替え</label>
@@ -94,24 +100,23 @@
         </div>
         <div class="control-group account-group">
           <label>
-            アカウント（<span id="userDisplay">-</span>）
+            アカウント（<span id="userDisplay">ゲスト</span>）
           </label>
           <div class="account-row">
-            <button class="button" type="button" id="signOutButton">
-              ログアウト
-            </button>
+            <a class="button" href="./login.html">ログイン</a>
           </div>
         </div>
       </section>
 
       <section class="list-header">
         <span>全件数: <strong id="totalCount">0</strong></span>
+        <span class="sample-banner">サンプル表示（編集不可）</span>
       </section>
 
       <section id="cardGrid" class="card-grid list-view" aria-live="polite"></section>
     </main>
 
-        <dialog id="editDialog" class="edit-dialog">
+    <dialog id="editDialog" class="edit-dialog">
       <form method="dialog" class="edit-form" id="editForm">
         <div class="edit-header">
           <h2 id="editDialogTitle">書評を編集</h2>
@@ -179,7 +184,7 @@
       </form>
     </dialog>
 
-        <dialog id="importDialog" class="edit-dialog">
+    <dialog id="importDialog" class="edit-dialog">
       <div class="edit-form">
         <div class="edit-header">
           <h2>インポート方法</h2>
@@ -205,8 +210,9 @@
       </div>
     </footer>
 
-    <script src="https://unpkg.com/aws-amplify@4.3.45/dist/aws-amplify.min.js"></script>
-    <script src="./src/aws-exports-global.js"></script>
+    <script>
+      window.APP_MODE = "sample";
+    </script>
     <script src="./sample-data.js"></script>
     <script src="./app.js"></script>
   </body>
